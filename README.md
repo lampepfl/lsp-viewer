@@ -1,4 +1,4 @@
-# lsp-viewver
+# lsp-viewer
 
 ## Project setup
 ```
