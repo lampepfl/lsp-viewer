@@ -33,7 +33,6 @@ library.add(faSearch)
 @Component({components: {
     FontAwesomeIcon,
 }})
-
 export default class FileSector extends Vue {
     private file: File = null as unknown as File
 

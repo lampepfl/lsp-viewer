@@ -5,7 +5,7 @@
             <button class="btn btn-outline-primary" v-on:click="toggleDiffmode()" v-if="diffMode">Editor View</button>
         </nav>
         <div class="editor" ref="editor"></div>
-        <div class="editor" style="display:none" ref="diffEditor"></div>
+        <div class="editor" ref="diffEditor"></div>
     </div>
 </template>
 
@@ -51,6 +51,8 @@ export default class Editor extends Vue {
         	enableSplitViewResizing: false,
 	        renderSideBySide: false
         });
+
+        this.$refs.diffEditor.display = "none";
     }
 
     toggleDiffmode(): void {

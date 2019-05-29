@@ -3,15 +3,14 @@
         <div id="messages">
             <FileSelector v-on:submit-file="handleFileSubmission" v-on:search="handleSearch"/>
             <div class="container">
-                <div
-                    v-for="(message, index) in logs.filter(([_, display]) => display)
-                    .map(([message, _]) => message)
-                    .slice(0, displayedLogs)"
-                >
-                    <Message
+                <div v-for="log, index in logs.slice(0, displayedLogs)">
+                    <LogEntry
+                        v-if="log.display"
                         v-on:message-selected="updateCodeView"
-                        v-bind:message="message"
+                        v-bind:message="log.msg"
                         v-bind:index="index"
+                        v-bind:method="getMethod(index)"
+                        v-bind:selectedId="selectedId"
                     />
                 </div>
                 <Trigger v-on:trigger-intersected="loadMore"/>
@@ -23,7 +22,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import Message from './components/Message.vue';
+import LogEntry from './components/LogEntry.vue';
 import TreeView from "vue-json-tree-view";
 import jQuery from "jquery";
 import FileSelector from "./components/FileSelector.vue";
@@ -35,83 +34,120 @@ Vue.use(BootstrapVue)
 import "./assets/custom.scss"
 import { toHtml } from '@fortawesome/fontawesome-svg-core';
 
+import * as msgs from "vscode-jsonrpc/lib/messages";
+
 Vue.use(TreeView);
 Vue.use(require('vue-moment'));
 
+interface Log {
+    msg: msgs.LSPLogMessage
+    display: boolean
+}
+
 @Component({
     components: {
-        Message,
+        LogEntry,
         FileSelector,
         Trigger,
         Editor,
     },
 })
-
 export default class App extends Vue {
-    logs: (object | boolean)[][] = [];
+    logs: Log[] = [];
     displayedLogs = 50;
     code = "var a = 5";
     previousCode = "";
+    selectedId: string | number = -1;
+
+    getMethod(index: number): string {
+        let log = this.logs[index];
+        if (!msgs.isResponseMessage(log.msg.message)) {
+            return log.msg.message.method;
+        }
+
+        for (let i = index - 1; i >= 0; i--) {
+            let msg = this.logs[i].msg.message;
+            if (msgs.isRequestMessage(msg) && msg.id == log.msg.message.id) {
+                return msg.method;
+            }
+        }
+
+        return "";
+    }
 
     handleFileSubmission(file: File): void {
         let reader = new FileReader();
-        reader.addEventListener("load", (event) => {
+        reader.addEventListener("load", event => {
             if (reader.result) {
                 let lines = reader.result.toString().split(/\n/);
 
                 this.logs = lines.filter(line => line.startsWith("[LSP"))
                     .map(line => {
                         line = line.substring(line.indexOf("{"));
-                        return [JSON.parse(line), true];
+                        return { msg: JSON.parse(line), display: true };
                     });
             }
         });
+
         reader.readAsText(file);
     }
 
     handleSearch(query: string): void {
         if (!query.trim()) {
-            this.logs = this.logs.map(([message, _]) => [message, true]);
+            this.logs.forEach(x => x.display = true);
         } else {
-            this.logs = this.logs.map(([message, _]) => [message, JSON.stringify(message).includes(query)]);
+            this.logs.forEach(x => x.display = JSON.stringify(x.msg).includes(query));
+        }
+    }
+
+    private getUri(message: Log): string | undefined {
+        if (msgs.isResponseMessage(message.msg.message)) {
+            return undefined;
+        }
+
+        return message.msg.message.params.uri;
+    }
+
+    private findCodeStateAt(index: number): { content: string, index: number } | undefined {
+        if (index < 0) {
+            return undefined;
+        }
+
+        for (let i = index; i >= 0; i--) {
+            let message = this.logs[i].msg.message;
+
+            if (!msgs.isResponseMessage(message)) {
+                if (message.method === "textDocument/didOpen") {
+                    return { content: message.params.textDocument.text, index: i }
+                } else if (message.method === "textDocument/didChange") {
+                    return { content: message.params.contentChanges[0].text, index: i };
+                }
+            }
         }
     }
 
     updateCodeView(index: number): void {
-        for (let i = index; i > 0; i--) {
-            if (this.logs[i][0].message.method == "textDocument/didOpen") {
-                this.code = this.logs[i][0].message.params.textDocument.text;
+        this.selectedId = this.logs[index].msg.message.id;
 
-                for (let j = i - 1; j > 0; j--) {
-                    if (this.logs[j][0].message.params.uri === this.logs[i][0].message.params.uri) {
-                        if (this.logs[j][0].message.method == "textDocument/didOpen") {
-                            this.previousCode = this.logs[j][0].message.params.textDocument.text;
-                            break;
-                        } else if (this.logs[j][0].message.method == "textDocument/didChange") {
-                            this.previousCode = this.logs[j][0].message.params.contentChanges[0].text;
-                            break;
-                        }
-                    }
+        let code = this.findCodeStateAt(index);
+        if (code !== undefined) {
+            this.code = code.content;
+
+            for (let i = code.index - 1; i >= 0; i--) {
+                let previousCode = this.findCodeStateAt(i);
+                if (previousCode === undefined) {
+                    this.previousCode = "";
+                    break;
                 }
 
-                break;
-            } else if (this.logs[i][0].message.method == "textDocument/didChange") {
-                this.code = this.logs[i][0].message.params.contentChanges[0].text;
-
-                for (let j = i - 1; j > 0; j--) {
-                    if (this.logs[j][0].message.params.uri === this.logs[i][0].message.params.uri) {
-                        if (this.logs[j][0].message.method == "textDocument/didOpen") {
-                            this.previousCode = this.logs[j][0].message.params.textDocument.text;
-                            break;
-                        } else if (this.logs[j][0].message.method == "textDocument/didChange") {
-                            this.previousCode = this.logs[j][0].message.params.contentChanges[0].text;
-                            break;
-                        }
-                    }
+                if (this.logs[previousCode.index].msg.message.params.textDocument.uri === this.logs[code.index].msg.message.params.textDocument.uri) {
+                    this.previousCode = previousCode.content;
+                    break;
                 }
-
-                break;
             }
+        } else {
+            this.code = "";
+            this.previousCode = "";
         }
     }
 
