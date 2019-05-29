@@ -77,6 +77,10 @@ export default class LogEntry extends Vue {
 </script>
 
 <style scoped lang="scss">
+.card-header {
+    cursor: pointer;
+}
+
 .notification {
     color: rgb(219, 143, 0);
 }
