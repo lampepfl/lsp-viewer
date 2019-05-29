@@ -1,7 +1,7 @@
 <template>
     <div
         v-bind:class="[message.message.id ? 'id-' + message.message.id : '', 'card']"
-        @click="onClick"
+        @click="messageSelected"
     >
         <div
             @click="toggleDisplay()"
@@ -34,7 +34,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Component, Prop, Vue, Emit } from 'vue-property-decorator';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faCommentAlt, faComment } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
@@ -57,12 +57,13 @@ export default class LogEntry extends Vue {
     @Prop(String) private method!: string;
     @Prop([String, Number]) private selectedId?: string | number;
 
-    toggleDisplay(): void {
-        this.show = !this.show
+    @Emit()
+    messageSelected(): number {
+        return this.index;
     }
 
-    onClick(event: Event & { currentTarget: HTMLElement }): void {
-        this.$emit("message-selected", this.index);
+    toggleDisplay(): void {
+        this.show = !this.show
     }
 
     isSelected(): boolean {
