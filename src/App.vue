@@ -3,14 +3,14 @@
         <div id="messages">
             <FileSelector v-on:submit-file="handleFileSubmission" v-on:search="handleSearch"/>
             <div class="container">
-                <div v-for="log, index in logs.slice(0, displayedLogs)">
+                <div v-for="(log, index) in logs" v-bind:key="index">
                     <LogEntry
                         v-if="log.display"
-                        v-on:message-selected="updateCodeView"
+                        v-on:message-selected="handleMessageSelected"
                         v-bind:message="log.msg"
                         v-bind:index="index"
-                        v-bind:method="getMethod(index)"
-                        v-bind:selectedId="selectedId"
+                        v-bind:method="methods[index]"
+                        v-bind:selected="selected[index]"
                     />
                 </div>
                 <Trigger v-on:trigger-intersected="loadMore"/>
@@ -53,11 +53,13 @@ interface Log {
     },
 })
 export default class App extends Vue {
-    logs: Log[] = [];
+    logs: ReadonlyArray<Log> = [];
+    methods: ReadonlyArray<string> = [];
+    selected: ReadonlyArray<boolean> = [];
     displayedLogs = 50;
     code = "var a = 5";
     previousCode = "";
-    selectedId: string | number = -1;
+    //selectedId: string | number = -1;
 
     getMethod(index: number): string {
         let log = this.logs[index];
@@ -77,11 +79,13 @@ export default class App extends Vue {
 
     handleFileSubmission(file: File): void {
         let reader = new FileReader();
+        let logs: Log[];
+
         reader.addEventListener("load", event => {
             if (reader.result) {
                 let lines = reader.result.toString().split(/\n/);
 
-                this.logs = lines.filter(line => line.startsWith("[LSP"))
+                logs = lines.filter(line => line.startsWith("[LSP"))
                     .map(line => {
                         line = line.substring(line.indexOf("{"));
                         return { msg: JSON.parse(line), display: true };
@@ -89,15 +93,30 @@ export default class App extends Vue {
             }
         });
 
+        reader.addEventListener("loadend", event => {
+            this.logs = Object.freeze(logs);
+            this.methods = Object.freeze(logs.map((_, i) => this.getMethod(i)));
+            this.selected = Object.freeze(Array(this.logs.length).fill(false));
+        });
+
         reader.readAsText(file);
     }
 
     handleSearch(query: string): void {
+        let logs: Log[];
         if (!query.trim()) {
-            this.logs.forEach(x => x.display = true);
+            logs = this.logs.map(x => {
+                x.display = true;
+                return x;
+            });
         } else {
-            this.logs.forEach(x => x.display = JSON.stringify(x.msg).includes(query));
+            logs = this.logs.map(x => {
+                x.display = JSON.stringify(x.msg).includes(query);
+                return x;
+            });
         }
+
+        this.logs = Object.freeze(logs);
     }
 
     private getUri(message: Log): string | undefined {
@@ -126,9 +145,52 @@ export default class App extends Vue {
         }
     }
 
-    updateCodeView(index: number): void {
-        this.selectedId = this.logs[index].msg.message.id;
+    findResponse(index: number): number {
+        let request = this.logs[index].msg.message as msgs.RequestMessage;
+        for (let i = index; i < this.logs.length; i++) {
+            let response = this.logs[i].msg.message;
+            if (msgs.isResponseMessage(response) && !msgs.isNotificationMessage(response) && request.id == response.id) {
+                return i;
+            }
+        }
 
+        return -1;
+    }
+
+    findRequest(index: number): number {
+        let response = this.logs[index].msg.message as msgs.ResponseMessage;
+        for (let i = index; i >= 0; i--) {
+            let request = this.logs[i].msg.message;
+            if (msgs.isRequestMessage(request) && request.id == response.id) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    handleMessageSelected(index: number): void {
+        let message = this.logs[index].msg.message;
+        /*if (msgs.isNotificationMessage(message) || message.id === null) {
+            this.selectedId = -1;
+        } else {
+            this.selectedId = message.id;
+        }*/
+
+        let selected = Array(this.logs.length).fill(false);
+        if (msgs.isResponseMessage(message)) {
+            selected[index] = true;
+            selected[this.findRequest(index)] = true;
+        } else if (msgs.isRequestMessage(message)) {
+            selected[index] = true;
+            selected[this.findResponse(index)] = true;
+        }
+        this.selected = Object.freeze(selected);
+
+        this.updateCodeView(index);
+    }
+
+    updateCodeView(index: number): void {
         let code = this.findCodeStateAt(index);
         if (code !== undefined) {
             this.code = code.content;

@@ -2,12 +2,13 @@
     <div
         v-bind:class="[message.message.id ? 'id-' + message.message.id : '', 'card']"
         @click="messageSelected"
+        ref="logEntry"
     >
         <div
             @click="toggleDisplay()"
-            v-bind:class="[isSelected() ? 'bg-secondary' : '', 
-            isNotificationMessage(message.message) ? 'notification' : 'message', 
-            'card-header']"
+            v-bind:class="[{ 'bg-secondary': selected },
+            isNotificationMessage(message.message) ? 'notification' : 'message',]"
+            class="card-header"
             v-bind:style="message.type.startsWith('receive') ? 'text-align: right' : ''"
         >
             <template v-if="message.type === 'send-notification'">
@@ -51,11 +52,13 @@ library.add(faComment);
 export default class LogEntry extends Vue {
     show = false;
     isNotificationMessage = isNotificationMessage;
+    observer!: IntersectionObserver;
+    visible = false;
 
     @Prop(Object) private message!: LSPLogMessage;
     @Prop(Number) private index!: number;
     @Prop(String) private method!: string;
-    @Prop([String, Number]) private selectedId?: string | number;
+    @Prop(Boolean) private selected!: boolean;
 
     @Emit()
     messageSelected(): number {
@@ -66,14 +69,26 @@ export default class LogEntry extends Vue {
         this.show = !this.show
     }
 
-    isSelected(): boolean {
+    get isSelected(): boolean {
         let selected = false;
         if (!isNotificationMessage(this.message.message)) {
             selected = this.message.message.id == this.selectedId;
         }
-
+        console.log("sdhkjsdfhkj")
         return selected;
     }
+/*
+    mounted(): void {
+        this.observer = new IntersectionObserver(entries => {
+            this.visible = entries[0].isIntersecting;
+        });
+
+        this.observer.observe(this.$refs.logEntry);
+    }
+
+    destroyed(): void {
+        this.observer.disconnect()
+    }*/
 }
 </script>
 
