@@ -5,12 +5,11 @@
             <div class="container">
                 <div v-for="(log, index) in logs" v-bind:key="index">
                     <LogEntry
-                        v-if="log.display"
+                        ref="log"
                         v-on:message-selected="handleMessageSelected"
+                        v-bind:visible="log.display"
                         v-bind:message="log.msg"
                         v-bind:index="index"
-                        v-bind:method="methods[index]"
-                        v-bind:selected="selected[index]"
                     />
                 </div>
                 <Trigger v-on:trigger-intersected="loadMore"/>
@@ -54,12 +53,10 @@ interface Log {
 })
 export default class App extends Vue {
     logs: ReadonlyArray<Log> = [];
-    methods: ReadonlyArray<string> = [];
-    selected: ReadonlyArray<boolean> = [];
     displayedLogs = 50;
     code = "var a = 5";
     previousCode = "";
-    //selectedId: string | number = -1;
+    selected!: LogEntry;
 
     getMethod(index: number): string {
         let log = this.logs[index];
@@ -95,8 +92,17 @@ export default class App extends Vue {
 
         reader.addEventListener("loadend", event => {
             this.logs = Object.freeze(logs);
-            this.methods = Object.freeze(logs.map((_, i) => this.getMethod(i)));
-            this.selected = Object.freeze(Array(this.logs.length).fill(false));
+
+            this.$nextTick(() => {
+                for (let i = 0; i < this.logs.length; i++) {
+                    this.$refs.log[i].setMethod(this.getMethod(i));
+
+                    let message = this.logs[i].msg.message;
+                    if (msgs.isRequestMessage(message) && !msgs.isNotificationMessage(message)) {
+                        this.$refs.log[this.findResponse(i)].setOther(this.$refs.log[i]);
+                    }
+                }
+            });
         });
 
         reader.readAsText(file);
@@ -170,22 +176,14 @@ export default class App extends Vue {
     }
 
     handleMessageSelected(index: number): void {
-        let message = this.logs[index].msg.message;
-        /*if (msgs.isNotificationMessage(message) || message.id === null) {
-            this.selectedId = -1;
+        if (this.selected === undefined) {
+            this.selected = this.$refs.log[index];
+            this.selected.setSelected(true);
         } else {
-            this.selectedId = message.id;
-        }*/
-
-        let selected = Array(this.logs.length).fill(false);
-        if (msgs.isResponseMessage(message)) {
-            selected[index] = true;
-            selected[this.findRequest(index)] = true;
-        } else if (msgs.isRequestMessage(message)) {
-            selected[index] = true;
-            selected[this.findResponse(index)] = true;
+            this.selected.setSelected(false);
+            this.selected = this.$refs.log[index];
+            this.selected.setSelected(true);
         }
-        this.selected = Object.freeze(selected);
 
         this.updateCodeView(index);
     }

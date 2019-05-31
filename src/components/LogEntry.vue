@@ -1,5 +1,6 @@
 <template>
     <div
+        v-show="visible"
         v-bind:class="[message.message.id ? 'id-' + message.message.id : '', 'card']"
         @click="messageSelected"
         ref="logEntry"
@@ -52,43 +53,38 @@ library.add(faComment);
 export default class LogEntry extends Vue {
     show = false;
     isNotificationMessage = isNotificationMessage;
-    observer!: IntersectionObserver;
-    visible = false;
+    other!: LogEntry;
+    selected = false;
+    method: string = "";
 
     @Prop(Object) private message!: LSPLogMessage;
     @Prop(Number) private index!: number;
-    @Prop(String) private method!: string;
-    @Prop(Boolean) private selected!: boolean;
+    @Prop(Boolean) private visible!: boolean;
 
     @Emit()
     messageSelected(): number {
         return this.index;
     }
 
+    setMethod(method: string): void {
+        this.method = method;
+    }
+
+    setOther(entry: LogEntry): void {
+        this.other = entry;
+        this.other.other = this;
+    }
+
+    setSelected(selected: boolean): void {
+        this.selected = selected;
+        if (this.other){
+            this.other.selected = selected;
+        }
+    }
+
     toggleDisplay(): void {
         this.show = !this.show
     }
-
-    get isSelected(): boolean {
-        let selected = false;
-        if (!isNotificationMessage(this.message.message)) {
-            selected = this.message.message.id == this.selectedId;
-        }
-        console.log("sdhkjsdfhkj")
-        return selected;
-    }
-/*
-    mounted(): void {
-        this.observer = new IntersectionObserver(entries => {
-            this.visible = entries[0].isIntersecting;
-        });
-
-        this.observer.observe(this.$refs.logEntry);
-    }
-
-    destroyed(): void {
-        this.observer.disconnect()
-    }*/
 }
 </script>
 
