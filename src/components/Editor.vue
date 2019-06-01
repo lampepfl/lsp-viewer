@@ -1,8 +1,16 @@
 <template>
     <div>
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
-            <button class="btn btn-outline-primary" v-on:click="toggleDiffmode()" v-if="!diffMode">Diff View</button>
-            <button class="btn btn-outline-primary" v-on:click="toggleDiffmode()" v-if="diffMode">Editor View</button>
+            <button
+                class="btn btn-outline-primary"
+                v-on:click="toggleDiffmode()"
+                v-if="!diffMode"
+            >Diff View</button>
+            <button
+                class="btn btn-outline-primary"
+                v-on:click="toggleDiffmode()"
+                v-if="diffMode"
+            >Editor View</button>
         </nav>
         <div class="editor" ref="editor"></div>
         <div class="editor" ref="diffEditor"></div>
@@ -16,8 +24,10 @@ import { language } from "../scala";
 
 @Component
 export default class Editor extends Vue {
+    $refs!: Vue['$refs'] & { editor: HTMLElement, diffEditor: HTMLElement };
+
     private editor?: monaco.editor.IEditor;
-    private diffEditor?: monaco.editor.IEditor;    
+    private diffEditor?: monaco.editor.IEditor;
     private diffMode = false;
 
     @Prop() private code!: string;
@@ -39,20 +49,20 @@ export default class Editor extends Vue {
             });
         }
     }
-    
+
     mounted(): void {
-        monaco.languages.register({id: "scala"});
+        monaco.languages.register({ id: "scala" });
         monaco.languages.setMonarchTokensProvider("scala", language);
         this.editor = monaco.editor.create(this.$refs.editor, {
-	        value: this.code,
-	        language: "scala"
+            value: this.code,
+            language: "scala"
         });
         this.diffEditor = monaco.editor.createDiffEditor(this.$refs.diffEditor, {
-        	enableSplitViewResizing: false,
-	        renderSideBySide: false
+            enableSplitViewResizing: false,
+            renderSideBySide: false
         });
 
-        this.$refs.diffEditor.display = "none";
+        this.$refs.diffEditor.style.display = "none";
     }
 
     toggleDiffmode(): void {
@@ -69,8 +79,8 @@ export default class Editor extends Vue {
 </script>
 
 <style scoped lang="scss">
-    .editor {
-        width: 100%;
-        height: 100%;
-    }
+.editor {
+    width: 100%;
+    height: 100%;
+}
 </style>
