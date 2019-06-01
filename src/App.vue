@@ -52,6 +52,8 @@ interface Log {
     },
 })
 export default class App extends Vue {
+    $refs!: Vue['$refs'] & { log: LogEntry[] };
+
     logs: ReadonlyArray<Log> = [];
     displayedLogs = 50;
     code = "var a = 5";
@@ -200,9 +202,13 @@ export default class App extends Vue {
                     break;
                 }
 
-                if (this.logs[previousCode.index].msg.message.params.textDocument.uri === this.logs[code.index].msg.message.params.textDocument.uri) {
-                    this.previousCode = previousCode.content;
-                    break;
+                let previous = this.logs[previousCode.index].msg.message;
+                let current = this.logs[code.index].msg.message;
+                if (!msgs.isResponseMessage(current) && !msgs.isResponseMessage(previous)) {
+                    if (previous.params.textDocument.uri === current.params.textDocument.uri) {
+                        this.previousCode = previousCode.content;
+                        break;
+                    }
                 }
             }
         } else {
