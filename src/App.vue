@@ -12,7 +12,6 @@
                         v-bind:index="index"
                     />
                 </div>
-                <Trigger v-on:trigger-intersected="loadMore"/>
             </div>
         </div>
         <Editor id="code-view" v-bind:code="code" v-bind:previous-code="previousCode"/>
@@ -21,17 +20,15 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+
 import LogEntry from './components/LogEntry.vue';
 import TreeView from "vue-json-tree-view";
-import jQuery from "jquery";
 import FileSelector from "./components/FileSelector.vue";
-import Trigger from "./components/Trigger.vue";
 import Editor from "./components/Editor.vue";
 
 import BootstrapVue from 'bootstrap-vue'
 Vue.use(BootstrapVue)
 import "./assets/custom.scss"
-import { toHtml } from '@fortawesome/fontawesome-svg-core';
 
 import * as msgs from "vscode-jsonrpc/lib/messages";
 
@@ -47,7 +44,6 @@ interface Log {
     components: {
         LogEntry,
         FileSelector,
-        Trigger,
         Editor,
     }
 })
@@ -55,8 +51,7 @@ export default class App extends Vue {
     $refs!: Vue['$refs'] & { log: LogEntry[] };
 
     logs: ReadonlyArray<Log> = [];
-    displayedLogs = 50;
-    code = "var a = 5";
+    code = "";
     previousCode = "";
     selected!: LogEntry;
 
@@ -215,10 +210,6 @@ export default class App extends Vue {
             this.code = "";
             this.previousCode = "";
         }
-    }
-
-    loadMore(): void {
-        this.displayedLogs += 50
     }
 }
 </script>
