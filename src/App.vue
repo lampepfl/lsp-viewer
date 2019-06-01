@@ -49,7 +49,7 @@ interface Log {
         FileSelector,
         Trigger,
         Editor,
-    },
+    }
 })
 export default class App extends Vue {
     $refs!: Vue['$refs'] & { log: LogEntry[] };
