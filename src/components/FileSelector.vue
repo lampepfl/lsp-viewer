@@ -44,14 +44,16 @@ library.add(faSearch)
     }
 })
 export default class FileSector extends Vue {
-    $refs!: Vue['$refs'] & { file: any, search: HTMLInputElement };
+    $refs!: Vue['$refs'] & { file: HTMLInputElement, search: HTMLInputElement };
 
     file!: File;
     fileName = "Choose a log file";
 
     selectFile(): void {
-        this.file = this.$refs.file.files[0];
-        this.fileName = this.file.name;
+        if (this.$refs.file.files !== null) {
+            this.file = this.$refs.file.files[0];
+            this.fileName = this.file.name;
+        }
     }
 
     @Emit()

@@ -3,7 +3,7 @@
         <div id="messages">
             <FileSelector v-on:submit-file="handleFileSubmission" v-on:search="handleSearch"/>
             <div class="container">
-                <div v-for="(log, index) in logs" v-bind:key="index">
+                <div v-for="(log, index) in logs" v-bind:key="index" ref="logDOM">
                     <LogEntry
                         ref="log"
                         v-on:message-selected="handleMessageSelected"
@@ -48,12 +48,13 @@ interface Log {
     }
 })
 export default class App extends Vue {
-    $refs!: Vue['$refs'] & { log: LogEntry[] };
+    $refs!: Vue['$refs'] & { log: LogEntry[], logDOM: HTMLElement[] };
 
     logs: ReadonlyArray<Log> = [];
     code = "";
     previousCode = "";
     selected!: LogEntry;
+    selectedIndex!: number;
 
     getMethod(index: number): string {
         let log = this.logs[index];
@@ -173,6 +174,7 @@ export default class App extends Vue {
     }
 
     handleMessageSelected(index: number): void {
+        this.selectedIndex = index;
         if (this.selected === undefined) {
             this.selected = this.$refs.log[index];
             this.selected.setSelected(true);
@@ -209,6 +211,47 @@ export default class App extends Vue {
         } else {
             this.code = "";
             this.previousCode = "";
+        }
+    }
+
+    created(): void {
+        window.addEventListener('keyup', this.onKey)
+    }
+
+    onKey(event: KeyboardEvent): void {
+        let nextIndex = -1;
+        switch (event.code) {
+            case "ArrowLeft":
+                for (let i = this.selectedIndex - 1; i >= 0; i--) {
+                    if (this.logs[i].display) {
+                        nextIndex = i;
+                        break; 
+                    }
+                }
+
+                if (this.selectedIndex !== undefined && nextIndex > 0) {
+
+                    this.$refs.log[nextIndex].show = true;
+                    this.handleMessageSelected(nextIndex);
+
+                    this.$refs.logDOM[this.selectedIndex].scrollIntoView({ behavior: "smooth", block: "center", inline: "start" });
+                }
+                break;
+            case "ArrowRight":
+                for (let i = this.selectedIndex + 1; i < this.logs.length; i++) {
+                    if (this.logs[i].display) {
+                        nextIndex = i;
+                        break;
+                    }
+                }
+
+                if (this.selectedIndex !== undefined && nextIndex > 0) {
+                    this.$refs.log[nextIndex].show = true;
+                    this.handleMessageSelected(nextIndex);
+
+                    this.$refs.logDOM[this.selectedIndex].scrollIntoView({ behavior: "smooth", block: "center", inline: "start" });
+                }
+                break;
         }
     }
 }

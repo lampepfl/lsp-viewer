@@ -26,8 +26,8 @@ import { language } from "../scala";
 export default class Editor extends Vue {
     $refs!: Vue['$refs'] & { editor: HTMLElement, diffEditor: HTMLElement };
 
-    private editor?: monaco.editor.IEditor;
-    private diffEditor?: monaco.editor.IEditor;
+    private editor!: monaco.editor.IEditor;
+    private diffEditor!: monaco.editor.IDiffEditor;
     private diffMode = false;
 
     @Prop() private code!: string;
@@ -47,6 +47,13 @@ export default class Editor extends Vue {
                 original: oldModel,
                 modified: model
             });
+
+            this.diffEditor.onDidUpdateDiff(() => {
+                let lineChanges = this.diffEditor.getLineChanges();
+                if (lineChanges !== null && lineChanges.length > 0) {
+                    this.diffEditor.revealLineInCenter(lineChanges[0].modifiedStartLineNumber);
+                }
+            })
         }
     }
 
@@ -59,7 +66,8 @@ export default class Editor extends Vue {
         });
         this.diffEditor = monaco.editor.createDiffEditor(this.$refs.diffEditor, {
             enableSplitViewResizing: false,
-            renderSideBySide: false
+            renderSideBySide: false,
+            ignoreTrimWhitespace: false
         });
 
         this.$refs.diffEditor.style.display = "none";
