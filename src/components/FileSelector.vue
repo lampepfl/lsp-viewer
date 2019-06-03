@@ -67,3 +67,11 @@ export default class FileSector extends Vue {
     }
 }
 </script>
+
+<style scoped lang="scss">
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+</style>
