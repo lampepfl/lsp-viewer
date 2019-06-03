@@ -22,6 +22,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 
 import LogEntry from './components/LogEntry.vue';
+//@ts-ignore
 import TreeView from "vue-json-tree-view";
 import FileSelector from "./components/FileSelector.vue";
 import Editor from "./components/Editor.vue";
