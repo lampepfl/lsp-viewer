@@ -3,7 +3,7 @@
         <div id="messages">
             <FileSelector v-on:submit-file="handleFileSubmission" v-on:search="handleSearch"/>
             <div class="container">
-                <div v-for="(log, index) in logs" v-bind:key="index" ref="logDOM">
+                <div v-for="(log, index) in logs" v-bind:key="index + fileName" ref="logDOM">
                     <LogEntry
                         ref="log"
                         v-on:message-selected="handleMessageSelected"
@@ -14,7 +14,12 @@
                 </div>
             </div>
         </div>
-        <Editor id="code-view" v-bind:code="code" v-bind:previous-code="previousCode"/>
+        <Editor
+            id="code-view"
+            v-bind:code="code"
+            v-bind:previous-code="previousCode"
+            v-bind:uri="uri"
+        />
     </div>
 </template>
 
@@ -51,9 +56,13 @@ interface Log {
 export default class App extends Vue {
     $refs!: Vue['$refs'] & { log: LogEntry[], logDOM: HTMLElement[] };
 
+    fileName!: string;
     logs: ReadonlyArray<Log> = [];
+
     code = "";
     previousCode = "";
+    uri = "";
+
     selected!: LogEntry;
     selectedIndex!: number;
 
@@ -74,6 +83,7 @@ export default class App extends Vue {
     }
 
     handleFileSubmission(file: File): void {
+        this.fileName = file.name;
         let reader = new FileReader();
         let logs: Log[];
 
@@ -91,6 +101,9 @@ export default class App extends Vue {
 
         reader.addEventListener("loadend", event => {
             this.logs = Object.freeze(logs);
+            this.code = "";
+            this.previousCode = "";
+            this.uri = "";
 
             this.$nextTick(() => {
                 for (let i = 0; i < this.logs.length; i++) {
@@ -122,14 +135,6 @@ export default class App extends Vue {
         }
 
         this.logs = Object.freeze(logs);
-    }
-
-    private getUri(message: Log): string | undefined {
-        if (msgs.isResponseMessage(message.msg.message)) {
-            return undefined;
-        }
-
-        return message.msg.message.params.uri;
     }
 
     private findCodeStateAt(index: number): { content: string, index: number } | undefined {
@@ -193,6 +198,11 @@ export default class App extends Vue {
         if (code !== undefined) {
             this.code = code.content;
 
+            let current = this.logs[code.index].msg.message;
+            if (!msgs.isResponseMessage(current)) {
+                this.uri = current.params.textDocument.uri;
+            }
+
             for (let i = code.index - 1; i >= 0; i--) {
                 let previousCode = this.findCodeStateAt(i);
                 if (previousCode === undefined) {
@@ -201,7 +211,6 @@ export default class App extends Vue {
                 }
 
                 let previous = this.logs[previousCode.index].msg.message;
-                let current = this.logs[code.index].msg.message;
                 if (!msgs.isResponseMessage(current) && !msgs.isResponseMessage(previous)) {
                     if (previous.params.textDocument.uri === current.params.textDocument.uri) {
                         this.previousCode = previousCode.content;
@@ -212,6 +221,7 @@ export default class App extends Vue {
         } else {
             this.code = "";
             this.previousCode = "";
+            this.uri = "";
         }
     }
 
@@ -226,7 +236,7 @@ export default class App extends Vue {
                 for (let i = this.selectedIndex - 1; i >= 0; i--) {
                     if (this.logs[i].display) {
                         nextIndex = i;
-                        break; 
+                        break;
                     }
                 }
 

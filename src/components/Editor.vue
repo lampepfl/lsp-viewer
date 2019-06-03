@@ -11,6 +11,7 @@
                 v-on:click="toggleDiffmode()"
                 v-if="diffMode"
             >Editor View</button>
+            <div class="file-name">{{uri}}</div>
         </nav>
         <div class="editor" ref="editor"></div>
         <div class="editor" ref="diffEditor"></div>
@@ -30,8 +31,9 @@ export default class Editor extends Vue {
     private diffEditor!: monaco.editor.IDiffEditor;
     private diffMode = false;
 
-    @Prop() private code!: string;
-    @Prop() private previousCode!: string;
+    @Prop(String) private code!: string;
+    @Prop(String) private previousCode!: string;
+    @Prop(String) private uri = "";
 
     @Watch("code", { deep: true })
     onCodeChanged(val: string, oldVal: string) {
@@ -87,6 +89,10 @@ export default class Editor extends Vue {
 </script>
 
 <style scoped lang="scss">
+.file-name {
+    margin: auto;
+}
+
 .editor {
     width: 100%;
     height: 100%;
