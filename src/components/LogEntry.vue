@@ -82,6 +82,9 @@ export default class LogEntry extends Vue {
         }
     }
 
+    /**
+     * Toggles the visibility of the body of the LogEntry. The body is rendered in the DOM only when visible.
+     */
     toggleDisplay(): void {
         this.show = !this.show
     }

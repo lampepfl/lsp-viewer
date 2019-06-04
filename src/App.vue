@@ -59,6 +59,7 @@ export default class App extends Vue {
     fileName!: string;
     logs: ReadonlyArray<Log> = [];
 
+    //editor data
     code = "";
     previousCode = "";
     uri = "";
@@ -66,6 +67,13 @@ export default class App extends Vue {
     selected!: LogEntry;
     selectedIndex!: number;
 
+    /**
+     * Return the method of the message `this.logs[index]` is the message is not a response, otherwise it finds the 
+     * request corresponding to the message and returns its method.
+     * 
+     * @param index Index of the message in `this.logs`.
+     * @returns method A string containing the name of the method.
+     */
     getMethod(index: number): string {
         let log = this.logs[index];
         if (!msgs.isResponseMessage(log.msg.message)) {
@@ -82,6 +90,12 @@ export default class App extends Vue {
         return "";
     }
 
+    /**
+     * Called to handle the `submit-file` event. Takes a file containing valid LSP logs and extracts the messages from
+     * it. 
+     * 
+     * @param file The log file.
+     */
     handleFileSubmission(file: File): void {
         this.fileName = file.name;
         let reader = new FileReader();
@@ -105,10 +119,12 @@ export default class App extends Vue {
             this.previousCode = "";
             this.uri = "";
 
+            //after generating the DOM we need to assign the method to each LogEntry
             this.$nextTick(() => {
                 for (let i = 0; i < this.logs.length; i++) {
                     this.$refs.log[i].setMethod(this.getMethod(i));
 
+                    //link each request/response together
                     let message = this.logs[i].msg.message;
                     if (msgs.isRequestMessage(message) && !msgs.isNotificationMessage(message)) {
                         this.$refs.log[this.findResponse(i)].setOther(this.$refs.log[i]);
@@ -120,6 +136,13 @@ export default class App extends Vue {
         reader.readAsText(file);
     }
 
+    /**
+     * Called to handle the `search` event. Sets the value of `display` to `true` for each log that contains the query.
+     * If the query is empty, the display property of every log is set to `true`. 
+     * Note: the search is case sensitive and can match any character present in the JSON representation of the message.
+     * 
+     * @param query The string to be found in the messages.
+     */
     handleSearch(query: string): void {
         let logs: Log[];
         if (!query.trim()) {
@@ -137,6 +160,13 @@ export default class App extends Vue {
         this.logs = Object.freeze(logs);
     }
 
+    /**
+     * Starting form `logs[index]` and going backwards, finds the first message containg the full code in its paylod.
+     * 
+     * @param index The position at which to start searching
+     * @returns A tuple containing the code and its index. `undefined` if either `index < 0` or there are no message
+     * containing the full code before `index`.
+     */
     private findCodeStateAt(index: number): { content: string, index: number } | undefined {
         if (index < 0) {
             return undefined;
@@ -155,6 +185,12 @@ export default class App extends Vue {
         }
     }
 
+    /**
+     * if `logs[index]` is a request message, returns the index of the response.
+     * 
+     * @param index The index of the request message `logs[index]`.
+     * @returns The index of the response corresponding to the request. -1 if `logs[index]` is not a request.
+     */
     findResponse(index: number): number {
         let request = this.logs[index].msg.message as msgs.RequestMessage;
         for (let i = index; i < this.logs.length; i++) {
@@ -167,6 +203,12 @@ export default class App extends Vue {
         return -1;
     }
 
+    /**
+     * if `logs[index]` is a response message, returns the index of the request.
+     * 
+     * @param index The index of the response message `logs[index]`.
+     * @returns The index of the request corresponding to the response. -1 if `logs[index]` is not a response.
+     */
     findRequest(index: number): number {
         let response = this.logs[index].msg.message as msgs.ResponseMessage;
         for (let i = index; i >= 0; i--) {
@@ -179,6 +221,11 @@ export default class App extends Vue {
         return -1;
     }
 
+    /**
+     * Called to handle the `message-selected` event.
+     * 
+     * @param index The index of the selected message.
+     */
     handleMessageSelected(index: number): void {
         this.selectedIndex = index;
         if (this.selected === undefined) {
@@ -193,6 +240,11 @@ export default class App extends Vue {
         this.updateCodeView(index);
     }
 
+    /**
+     * Updates the code in the editor with the code present in `logs[index]` or the last known code.
+     * 
+     * @param index The index from which to update the code in the editor.
+     */
     updateCodeView(index: number): void {
         let code = this.findCodeStateAt(index);
         if (code !== undefined) {
@@ -229,6 +281,11 @@ export default class App extends Vue {
         window.addEventListener('keyup', this.onKey)
     }
 
+    /**
+     * Handles the left arrow and right arrow key presses.
+     * 
+     * @param event The keyboard event containing the key pressed.
+     */
     onKey(event: KeyboardEvent): void {
         let nextIndex = -1;
         switch (event.code) {

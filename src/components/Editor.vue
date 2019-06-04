@@ -35,8 +35,14 @@ export default class Editor extends Vue {
     @Prop(String) private previousCode!: string;
     @Prop(String) private uri = "";
 
+    /**
+     * Sets the code displayed in the editor.
+     * 
+     * @param val The current code.
+     * @param oldVal The previous state of the code. Used to compute the diff.
+     */
     @Watch("code", { deep: true })
-    onCodeChanged(val: string, oldVal: string) {
+    onCodeChanged(val: string, oldVal: string): void {
         let model = monaco.editor.createModel(this.code, "scala");
 
         if (this.editor) {
@@ -75,6 +81,9 @@ export default class Editor extends Vue {
         this.$refs.diffEditor.style.display = "none";
     }
 
+    /**
+     * Changes between the diff editor and the normal editor display.
+     */
     toggleDiffmode(): void {
         this.diffMode = !this.diffMode;
         if (this.diffMode) {
