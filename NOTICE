@@ -1,0 +1,10 @@
+lsp-viewer
+Copyright (c) 2019 Programming Methods Laboratory EPFL
+Licensed under the MIT License.
+
+The following files contain content from third-party projects:
+
+# src/scala.ts
+Adapted from https://github.com/scalameta/metabrowse/blob/master/metabrowse-js/src/main/resources/scala.ts
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License.
