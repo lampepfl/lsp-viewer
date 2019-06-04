@@ -13,10 +13,10 @@
                     <label class="custom-file-label">{{ fileName }}</label>
                 </div>
             </div>
-            <div class="col-auto">
-                <button class="btn btn-outline-primary" type="submit" v-on:click="submitFile()">Load</button>
-            </div>
         </div>
+        <span class="ml-auto" v-if="loading">
+            <font-awesome-icon icon="spinner" class="fa-pulse"/>&nbsp;Loading...
+        </span>
         <div class="ml-auto">
             <div class="input-group">
                 <input ref="search" type="text" class="form-control" placeholder="Search">
@@ -33,10 +33,10 @@
 <script lang="ts">
 import { Component, Prop, Vue, Emit } from 'vue-property-decorator';
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faSearch } from '@fortawesome/free-solid-svg-icons'
+import { faSearch, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-library.add(faSearch)
+library.add(faSearch, faSpinner)
 
 @Component({
     components: {
@@ -48,12 +48,16 @@ export default class FileSector extends Vue {
 
     file!: File;
     fileName = "Choose a log file";
+    loading = false;
 
     selectFile(): void {
         if (this.$refs.file.files !== null) {
             this.file = this.$refs.file.files[0];
             this.fileName = this.file.name;
         }
+
+        this.loading = true;
+        this.submitFile();
     }
 
     @Emit()
@@ -64,6 +68,21 @@ export default class FileSector extends Vue {
     @Emit()
     search(): string {
         return this.$refs.search.value;
+    }
+
+    async fetchDefaultFile() {
+        let response = await fetch('/demo.log');
+        let data = await response.blob();
+        let metadata = {
+            type: 'text/plain'
+        };
+        this.file = new File([data], "demo.log", metadata);
+
+        this.submitFile();
+    }
+
+    mounted(): void {
+        this.fetchDefaultFile();
     }
 }
 </script>

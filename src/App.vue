@@ -1,7 +1,7 @@
 <template>
     <div id="app">
         <div id="messages">
-            <FileSelector v-on:submit-file="handleFileSubmission" v-on:search="handleSearch"/>
+            <FileSelector ref="fileSelector" v-on:submit-file="handleFileSubmission" v-on:search="handleSearch"/>
             <div class="container">
                 <div v-for="(log, index) in logs" v-bind:key="index + fileName" ref="logDOM">
                     <LogEntry
@@ -54,7 +54,7 @@ interface Log {
     }
 })
 export default class App extends Vue {
-    $refs!: Vue['$refs'] & { log: LogEntry[], logDOM: HTMLElement[] };
+    $refs!: Vue['$refs'] & { log: LogEntry[], logDOM: HTMLElement[], fileSelector: FileSelector };
 
     fileName!: string;
     logs: ReadonlyArray<Log> = [];
@@ -130,6 +130,8 @@ export default class App extends Vue {
                         this.$refs.log[this.findResponse(i)].setOther(this.$refs.log[i]);
                     }
                 }
+
+                this.$refs.fileSelector.loading = false;
             });
         });
 
