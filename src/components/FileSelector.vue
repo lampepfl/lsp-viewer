@@ -71,7 +71,7 @@ export default class FileSector extends Vue {
     }
 
     async fetchDefaultFile() {
-        let response = await fetch('/demo.log');
+        let response = await fetch('./demo.log');
         let data = await response.blob();
         let metadata = {
             type: 'text/plain'
