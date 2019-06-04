@@ -270,24 +270,18 @@ export default class App extends Vue {
 
 <style scoped lang="scss">
 #app {
-    overflow: hidden;
+    display: flex;
 }
 
 #messages {
-    width: 50%;
-    overflow: auto;
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
+    flex: 50%;
+    height: 100vh;
+    overflow: scroll;
 }
 
 #code-view {
-    width: 50%;
+    flex: 50%;
+    height: 100vh;
     overflow: hidden;
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
 }
 </style>

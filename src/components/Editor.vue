@@ -89,6 +89,11 @@ export default class Editor extends Vue {
 </script>
 
 <style scoped lang="scss">
+.truc {
+    display: flex;
+    flex-flow: column;
+}
+
 .file-name {
     margin: auto;
 }
