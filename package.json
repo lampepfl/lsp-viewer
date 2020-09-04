@@ -22,7 +22,7 @@
     "vue": "^2.6.10",
     "vue-class-component": "^6.0.0",
     "vue-json-tree-view": "^2.1.4",
-    "vue-moment": "^4.0.0",
+    "vue-moment": "^4.1.0",
     "vue-property-decorator": "^7.0.0"
   },
   "devDependencies": {
